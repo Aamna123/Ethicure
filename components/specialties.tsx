@@ -1,4 +1,6 @@
 import { Heart, Users, Sparkles, Shield, ArrowRight } from "lucide-react";
+import Link from "next/link";
+import { doctors } from "@/data/doctors";
 
 const specialties = [
   { icon: Heart, label: "Cardiology", patients: "15K+ Patients" },
@@ -22,25 +24,31 @@ export default function Specialties() {
         </div>
 
         <div className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4 lg:gap-8">
-          {specialties.map((s) => (
-            <div
-              key={s.label}
-              className="flex flex-col items-center gap-4 rounded-2xl bg-background p-6 shadow-sm transition-shadow hover:shadow-md sm:gap-6 sm:p-8 lg:p-10"
-            >
-              <div
-                className="flex h-12 w-12 items-center justify-center rounded-xl sm:h-14 sm:w-14"
-                style={{
-                  background:
-                    "linear-gradient(135deg, #b91c1c 0%, #0a2240 100%)",
-                }}
+          {specialties.map((s) => {
+            const doc = doctors.find((d) => d.specialization === s.label);
+            const href = doc ? `/doctors/${doc.slug}` : "#";
+
+            return (
+              <Link
+                key={s.label}
+                href={href}
+                className="flex flex-col items-center gap-4 rounded-2xl bg-background p-6 shadow-sm transition-shadow hover:shadow-md sm:gap-6 sm:p-8 lg:p-10"
               >
-                <s.icon className="h-5 w-5 text-primary-foreground sm:h-6 sm:w-6" />
-              </div>
-              <h3 className="text-sm font-bold text-navy sm:text-base lg:text-lg">
-                {s.label}
-              </h3>
-            </div>
-          ))}
+                <div
+                  className="flex h-12 w-12 items-center justify-center rounded-xl sm:h-14 sm:w-14"
+                  style={{
+                    background:
+                      "linear-gradient(135deg, #b91c1c 0%, #0a2240 100%)",
+                  }}
+                >
+                  <s.icon className="h-5 w-5 text-primary-foreground sm:h-6 sm:w-6" />
+                </div>
+                <h3 className="text-sm font-bold text-navy sm:text-base lg:text-lg">
+                  {s.label}
+                </h3>
+              </Link>
+            );
+          })}
         </div>
 
         <div className="mt-12 flex justify-center md:mt-16">
