@@ -1,0 +1,180 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  PATIENT
+  ADMIN
+  ADVISOR
+}
+
+enum ConsultationStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum ContactChannel {
+  PHONE_CALL
+  WHATSAPP_MESSAGE
+  WHATSAPP_CALL
+}
+
+enum NotificationChannel {
+  EMAIL
+  WHATSAPP
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id            String         @id @default(cuid())
+  role          UserRole       @default(PATIENT)
+  fullName      String?
+  phone         String         @unique
+  email         String?
+  externalAuthId String?       @unique
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  consultations Consultation[] @relation("PatientConsultations")
+  reviews       Review[]
+  contactLogs   ContactLog[]
+}
+
+model Doctor {
+  id                  String           @id @default(cuid())
+  slug                String           @unique
+  name                String
+  profileImage        String?
+  specialization      String
+  location            String
+  yearsOfExperience   Int
+  rating              Float            @default(0)
+  totalReviews        Int              @default(0)
+  description         String
+  phoneNumber         String
+  whatsappNumber      String?
+  hospitalAffiliation String?
+  consultationFee     String?
+  availableHours      String?
+  aboutDoctor         String?
+  isAdvisor           Boolean          @default(true)
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  expertise           DoctorExpertise[]
+  qualifications      DoctorQualification[]
+  languages           DoctorLanguage[]
+  consultations       Consultation[]
+  reviews             Review[]
+  contactLogs         ContactLog[]
+}
+
+model DoctorExpertise {
+  id       String @id @default(cuid())
+  doctorId String
+  value    String
+  doctor   Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@index([doctorId])
+}
+
+model DoctorQualification {
+  id       String @id @default(cuid())
+  doctorId String
+  value    String
+  doctor   Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@index([doctorId])
+}
+
+model DoctorLanguage {
+  id       String @id @default(cuid())
+  doctorId String
+  value    String
+  doctor   Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@index([doctorId])
+}
+
+model Consultation {
+  id               String             @id @default(cuid())
+  patientId        String
+  doctorId         String
+  status           ConsultationStatus @default(PENDING)
+  symptoms         String?
+  notes            String?
+  preferredDate    DateTime?
+  preferredChannel ContactChannel?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  patient          User               @relation("PatientConsultations", fields: [patientId], references: [id], onDelete: Restrict)
+  doctor           Doctor             @relation(fields: [doctorId], references: [id], onDelete: Restrict)
+  review           Review?
+  notifications    Notification[]
+
+  @@index([patientId, status])
+  @@index([doctorId, status])
+}
+
+model Review {
+  id             String       @id @default(cuid())
+  userId         String
+  doctorId       String
+  consultationId String?      @unique
+  rating         Int
+  title          String?
+  text           String
+  status         ReviewStatus @default(PENDING)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  user           User         @relation(fields: [userId], references: [id], onDelete: Restrict)
+  doctor         Doctor       @relation(fields: [doctorId], references: [id], onDelete: Restrict)
+  consultation   Consultation? @relation(fields: [consultationId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, doctorId])
+  @@index([doctorId, status])
+}
+
+model ContactLog {
+  id        String         @id @default(cuid())
+  doctorId  String
+  userId    String?
+  channel   ContactChannel
+  metadata  Json?
+  createdAt DateTime       @default(now())
+  doctor    Doctor         @relation(fields: [doctorId], references: [id], onDelete: Restrict)
+  user      User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([doctorId, channel])
+}
+
+model Notification {
+  id             String              @id @default(cuid())
+  consultationId String
+  channel        NotificationChannel
+  recipient      String
+  status         NotificationStatus  @default(PENDING)
+  errorMessage   String?
+  createdAt      DateTime            @default(now())
+  sentAt         DateTime?
+  consultation   Consultation        @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+
+  @@index([consultationId, status])
+}
